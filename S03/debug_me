@@ -1,0 +1,6 @@
+The error is located in the line 10. It type is ZeroDivisionError, this occurs when this
+values for result 2 are chosen (a=0, b=2, c=3, d=3). t1 is equal 0 (c-d = 0;3-3=0), therefore
+when we execute t3 it is impossible because we can't divide by 0.
+
+In order to solve the error it will be enough with avoiding that t1 result is equal 0, for that
+the values of c and d must be different.
