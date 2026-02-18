@@ -28,8 +28,8 @@ def seq_count(seq):
             bases[base] += 1
     return bases
 
-def seq_reverse(seq):
-    reverse = seq[::-1]
+def seq_reverse(seq, n):
+    reverse = seq[:n][::-1]
     return reverse
 
 def seq_complement(seq):
