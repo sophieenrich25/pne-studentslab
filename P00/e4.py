@@ -9,8 +9,9 @@ print("------|Exercise 4|------")
 for gene in genes:
     fullname = FOLDER + gene + ".txt"
     seq = seq_read_fasta(fullname)
-    result = seq_count(seq)
+
     print(f"\nGene {gene}: ")
     for base in bases:
-        print(f" {base}: {result[base]}")
+        result = seq_count_base(seq, base)
+        print(f" {base}: {result}")
 
