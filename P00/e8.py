@@ -17,4 +17,4 @@ for gene in genes:
         if value > max_value:
             max_value = value
             max_base = base
-    print(f"Gene {gene}: Most frecuent base: {max_base}")
+    print(f"Gene {gene}: Most frequent base: {max_base}")
