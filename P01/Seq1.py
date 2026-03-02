@@ -22,7 +22,7 @@ class Seq:
     def len(self):
         if self.strbases == "ERROR":
             return 0
-        if self.strbases == "NULL":
+        elif self.strbases == "NULL":
             return 0
         return len(self.strbases)
 
@@ -30,7 +30,7 @@ class Seq:
         count = 0
         if self.strbases == "ERROR":
             return 0
-        if self.strbases == "NULL":
+        elif self.strbases == "NULL":
             return 0
 
         for a in self.strbases:
@@ -51,13 +51,17 @@ class Seq:
     def reverse(self):
         if self.strbases == "ERROR":
             return "ERROR"
-        if self.strbases == "NULL":
+        elif self.strbases == "NULL":
             return "NULL"
         return self.strbases[::-1]
 
 
     def complement(self):
         complement = ""
+        if self.strbases == "ERROR":
+            return "ERROR"
+        elif self.strbases == "NULL":
+            return "NULL"
         for base in  self.strbases:
             if base == "A":
                 complement += "T"
