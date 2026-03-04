@@ -82,6 +82,7 @@ class Seq:
         for line in file_lines[1:]:
             sequence += line
         self.strbases = sequence
+        return sequence
 
 def print_seqs(seq_list):
     i = 0
