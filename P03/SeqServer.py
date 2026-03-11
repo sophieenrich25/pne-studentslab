@@ -34,6 +34,7 @@ while True:
         msg = msg_raw.decode()
         parts_msg = msg.strip().split(" ",1)
         cmd = parts_msg[0]
+        arg = parts_msg[1]
 
         if cmd == "PING":
             termcolor.cprint("PING command!", 'green')
@@ -65,7 +66,7 @@ while True:
             for base in ["A", "C", "G", "T"]:
                 count = length[base]
                 percent = (count / total) * 100
-                response += f"{base}: {count} ({percent}%)\n"
+                response += f"{base}: {count} ({round(percent, 2)}%)\n"
             print(response)
             cs.send(response.encode())
 
@@ -101,8 +102,6 @@ while True:
                     cs.send(response.encode())
                 else:
                     response = "ERROR\n"
-
-
 
         cs.close()
 
