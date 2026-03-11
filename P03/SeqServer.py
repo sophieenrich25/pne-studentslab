@@ -45,7 +45,7 @@ while True:
         elif  cmd == "GET" and len(parts_msg) > 1:
             termcolor.cprint("GET", 'green')
 
-            n = int(parts_msg[1])
+            n = int(arg)
             response = seqs[n] + "\n"
 
             print(response)
@@ -54,8 +54,7 @@ while True:
         elif cmd == "INFO" and len(parts_msg) > 1:
             termcolor.cprint("INFO", 'green')
 
-            sequence = parts_msg[1]
-            seq = Seq(sequence)
+            seq = Seq(arg)
             total = seq.len()
             length = seq.count()
 
@@ -73,8 +72,7 @@ while True:
         elif cmd == "COMP" and len(parts_msg) > 1:
             termcolor.cprint("COMP", 'green')
 
-            sequence = parts_msg[1]
-            seq = Seq(sequence)
+            seq = Seq(arg)
             response = seq.complement() + "\n"
             print(response)
             cs.send(response.encode())
@@ -82,8 +80,7 @@ while True:
         elif cmd == "REV" and len(parts_msg) > 1:
             termcolor.cprint("REV", 'green')
 
-            sequence = parts_msg[1]
-            seq = Seq(sequence)
+            seq = Seq(arg)
             response = seq.reverse() + "\n"
             print(response)
             cs.send(response.encode())
@@ -92,7 +89,7 @@ while True:
             termcolor.cprint("GENE", 'green')
 
             for gene in genes:
-                if gene == parts_msg[1]:
+                if gene == arg:
                     FOLDER = "../S04/sequences/"
                     filename = FOLDER + gene + ".txt"
                     s = Seq()
