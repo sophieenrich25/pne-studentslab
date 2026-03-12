@@ -34,7 +34,8 @@ while True:
         msg = msg_raw.decode()
         parts_msg = msg.strip().split(" ",1)
         cmd = parts_msg[0]
-        arg = parts_msg[1]
+        if len(parts_msg) > 1:
+            arg = parts_msg[1]
 
         if cmd == "PING":
             termcolor.cprint("PING command!", 'green')
@@ -42,16 +43,20 @@ while True:
             print(response)
             cs.send(response.encode())
 
-        elif  cmd == "GET" and len(parts_msg) > 1:
+        elif  cmd == "GET":
             termcolor.cprint("GET", 'green')
+            try:
+                n = int(arg)
+                if 4 >= n:
+                    response = seqs[n] + "\n"
+                    print(response)
+                    cs.send(response.encode())
+                else:
+                    print("ERROR")
+            except ValueError:
+                print("ERROR")
 
-            n = int(arg)
-            response = seqs[n] + "\n"
-
-            print(response)
-            cs.send(response.encode())
-
-        elif cmd == "INFO" and len(parts_msg) > 1:
+        elif cmd == "INFO":
             termcolor.cprint("INFO", 'green')
 
             seq = Seq(arg)
@@ -59,7 +64,7 @@ while True:
             length = seq.count()
 
             response = ""
-            response += f"Sequence: {sequence}\n"
+            response += f"Sequence: {seq}\n"
             response += f"Total length: {total}\n"
 
             for base in ["A", "C", "G", "T"]:
@@ -69,7 +74,7 @@ while True:
             print(response)
             cs.send(response.encode())
 
-        elif cmd == "COMP" and len(parts_msg) > 1:
+        elif cmd == "COMP":
             termcolor.cprint("COMP", 'green')
 
             seq = Seq(arg)
@@ -77,7 +82,7 @@ while True:
             print(response)
             cs.send(response.encode())
 
-        elif cmd == "REV" and len(parts_msg) > 1:
+        elif cmd == "REV":
             termcolor.cprint("REV", 'green')
 
             seq = Seq(arg)
@@ -85,7 +90,7 @@ while True:
             print(response)
             cs.send(response.encode())
 
-        elif cmd == "GENE" and len(parts_msg) > 1:
+        elif cmd == "GENE":
             termcolor.cprint("GENE", 'green')
 
             for gene in genes:
