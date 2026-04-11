@@ -3,7 +3,7 @@ import http.server
 import socketserver
 import termcolor
 
-PORT = 8081
+PORT = 8080
 error_page = "error.html"
 
 socketserver.TCPServer.allow_reuse_address = True
