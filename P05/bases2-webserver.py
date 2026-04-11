@@ -27,12 +27,12 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             file_path = Path("html" + path)
 
         if file_path.is_file():
-            self.send_response(200)  # OK
-            self.send_header("Content-type", "text/html")  # Assuming HTML files for now
+            self.send_response(200)
+            self.send_header("Content-type", "text/html")
             self.end_headers()
             try:
                 with file_path.open('rb') as file:
-                    self.wfile.write(file.read())  # Serve the requested file
+                    self.wfile.write(file.read())
             except FileNotFoundError:
                 self.send_response(404)
                 self.send_header("Content-type", "text/plain")
@@ -45,7 +45,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.end_headers()
             try:
                 with open(error_path, 'rb') as file:
-                    self.wfile.write(file.read())  # Serve error.html
+                    self.wfile.write(file.read())
             except FileNotFoundError:
                 self.send_response(404)
                 self.send_header("Content-type", "text/plain")
