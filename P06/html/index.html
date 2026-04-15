@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Practice 6-ex 1</title>
+  </head>
+  <body>
+    <h1>SEQ2 server</h1>
+    <p>Access to the server</p>
+
+    <hr style="border: 1px solid black; width: 100%;">
+
+    <form action="ping" method="get">
+      Is the server alive?
+      <input type="submit" value="PING">
+    </form>
+
+    <br>
+    <hr style="border: 1px solid black; width: 100%;">
+
+    <form action="GET" method="get">
+      Get a sequence. Select sequence number.
+      <select name="n">
+        <option value="0">0</option>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+      <input type="submit" value="GET">
+    </form>
+
+    <br>
+    <hr style="border: 1px solid black; width: 100%;">
+
+    <form action="GENE" method="get">
+      Get a gene. Select the name.
+      <select name="gene">
+        <option value="U5">U5</option>
+        <option value="ADA">ADA</option>
+        <option value="FRAT1">FRAT1</option>
+        <option value="FXN">FXN</option>
+        <option value="RNU6_269P">RNU6_269P</option>
+      </select>
+      <input type="submit" value="GENE">
+    </form>
+
+    <br>
+    <hr style="border: 1px solid black; width: 100%;">
+
+    <form action="/OPERATION" method="get">
+  Write a sequence:
+  <input type="text" name="sequence">
+  <br>
+
+  Select operation:
+  <input type="radio" name="operation" value="Info" checked> Info
+  <input type="radio" name="operation" value="Comp"> Comp
+  <input type="radio" name="operation" value="Rev"> Rev
+
+  <br>
+  <input type="submit" value="OPERATE!">
+</form>
+
+  </body>
+</html>
