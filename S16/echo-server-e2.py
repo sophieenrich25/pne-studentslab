@@ -21,7 +21,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         arguments = parse_qs(url_path.query)
 
         if path == "/":
-            contents = Path('html/form-e1.html').read_text()
+            contents = Path('html/form-e2.html').read_text()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.send_header('Content-Length', len(contents.encode()))
@@ -30,6 +30,9 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
         elif path == "/echo":
             message = arguments.get("msg", [""])[0]
+            if "upper" in arguments:
+                message = message.upper()
+
             contents = f"""
             <!DOCTYPE html>
             <html lang="en">
