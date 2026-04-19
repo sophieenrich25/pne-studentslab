@@ -51,20 +51,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.wfile.write(contents.encode())
 
         elif path == "/ping":
-            contents = f"""
-            <!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <title>Ping OK!</title>
-                <p>The SEQ2 server is running...</p>
-                <a href="/">Main page</a>
-            </head>
-            <body>
-            </body>
-            </html> 
-            """
-
+            contents = Path('html/ping.html').read_text()
             self.send_response(200)
             self.send_header('Content-Type', 'text/html')
             self.send_header('Content-Length', len(contents.encode()))
