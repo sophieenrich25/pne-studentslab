@@ -1,24 +1,31 @@
-import json
-import termcolor
-from pathlib import Path
+# -- Example of a client that uses the HTTP.client library
+# -- for requesting the main page from the server
+import http.client
 
-# -- Read the json file
-jsonstring = Path("people-1.json").read_text()
+PORT = 8080
+SERVER = 'localhost'
 
-# Create the object person from the json string
-person = json.loads(jsonstring)
+print(f"\nConnecting to server: {SERVER}:{PORT}\n")
 
-# Person is now a dictionary. We can read the values
-# associated to the fields 'Firstname', 'Lastname' and 'age'
+# Connect with the server
+conn = http.client.HTTPConnection(SERVER, PORT)
 
-# -- Read the Firtname
-firstname = person['Firstname']
-lastname = person['Lastname']
-age = person['age']
+# -- Send the request message, using the GET method. We are
+# -- requesting the main page (/)
+try:
+    conn.request("GET", "/listusers")
+except ConnectionRefusedError:
+    print("ERROR! Cannot connect to the Server")
+    exit()
 
-# Print the information on the console, in colors
-print()
-termcolor.cprint("Name: ", 'green', end="")
-print(firstname, lastname)
-termcolor.cprint("Age: ", 'green', end="")
-print(age)
+# -- Read the response message from the server
+r1 = conn.getresponse()
+
+# -- Print the status line
+print(f"Response received!: {r1.status} {r1.reason}\n")
+
+# -- Read the response's body
+data1 = r1.read().decode("utf-8")
+
+# -- Print the received data
+print(f"CONTENT: {data1}")
