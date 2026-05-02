@@ -69,9 +69,6 @@ if r1.status == 200:
             most_frequent_base = base
     termcolor.cprint(f"Most frecuent base:", color="green",  end="")
     print(most_frequent_base)
-
-
 else:
     print(f"Error: {r1.status}")
-
 conn.close()
