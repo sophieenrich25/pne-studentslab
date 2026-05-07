@@ -5,9 +5,28 @@ import socketserver
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import json
+import jinja2 as j
+from jinja2 import Template
 
 PORT = 8080
 class TestHandler(http.server.BaseHTTPRequestHandler):
+
+    def read_html_file(self, filename):
+        try:
+            path = Path("html/" + filename)
+            contents = path.read_text()
+            return j.Template(contents)
+        except FileNotFoundError:
+            print("Error: File not found.")
+            return None
+
+    def render_template(self, filename, context):
+        template = self.read_html_file(filename)
+        if template:
+            result = template.render(context=context)
+            self.send_html_response(result)
+        else:
+            self.error()
 
     def get_ensembl_json(self, endpoint):
         PARAMS = "?content-type=application/json"
@@ -44,7 +63,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         arguments = parse_qs(url_path.query)
 
         if path == "/":
-            contents = Path('main_page.html').read_text()
+            contents = Path('html/main_page.html').read_text()
             self.send_html_response(contents)
         elif path == "/listSpecies":
             self.listSpecies(arguments)
@@ -56,34 +75,32 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.error()
 
     def error(self):
-        contents = Path('error.html').read_text()
+        contents = Path('html/error.html').read_text()
         print("Error")
         return self.send_html_response(contents)
 
     def listSpecies(self, arguments):
         data = self.get_ensembl_json("/info/species")
+
         if data:
-            species = data["species"]
+            all_species = data["species"]
 
-            limit = arguments.get("limit", [None])[0]
-            if limit and limit.isdigit():
-                species = species[:int(limit)]
+            limit = arguments.get("limit")
+            if limit and str(limit).isdigit():
+                limit = int(limit)
+                selected_species = all_species[:limit]
             else:
-                limit = len(species)
+                limit = len(all_species)
+                selected_species = all_species
 
-            species_list = data["species"][:int(limit)]
-            names_list = []
-            for i in species_list:
-                name = i["display_name"]
-                names_list.append(name)
-            species_html = self.html_lists(names_list)
+            names_list = [s["display_name"] for s in selected_species]
 
-            contents = Path('listSpecies.html').read_text()
-            result = contents.format(
-                total_species=len(data["species"]),
-                limit_value=limit,
-                species_list=species_html
-            )
+            template = Template(self.read_html_file("listSpecies.html"))
+            result = template.render(context={
+                "total_species" : len(all_species),
+                "limit_value" : limit,
+                "species_list" : names_list
+            })
             self.send_html_response(result)
         else:
             self.error()
@@ -94,16 +111,15 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
         if data:
             regions = data["top_level_region"]
-            names_list = []
-            for region in regions:
-                name = region["name"]
-                names_list.append(name)
+            names_list = [region["name"] for region in regions]
+
             names_html = self.html_lists(names_list)
 
-            contents = Path('karyotype.html').read_text()
-            result = contents.format(
-                names_list=names_html
-            )
+            template = self.read_html_file("karyotype.html")
+            result = template.render(context={
+                "names_list" : names_html,
+            })
+
             self.send_html_response(result)
 
         else:
@@ -121,15 +137,16 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             length = None
 
             for region in regions:
-                if str(region["name"]) == str(chromosome_selected):
+                if str(region["name"]).strip() == str(chromosome_selected).strip():
                     length = region["length"]
                 break
 
             if length:
-                contents = Path('chromosomeLength.html').read_text()
-                result = contents.format(
-                    length_chromosome=length
-                )
+                template = self.read_html_file("chromosomeLength.html")
+                result = template.render(context={
+                    "length_chromosome": length,
+                })
+
                 self.send_html_response(result)
                 print(f"{length}")
             else:
@@ -137,12 +154,6 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         else:
             self.error()
             print("Error: Ensembl data could not be obtained")
-
-
-
-
-
-
 
 
 
