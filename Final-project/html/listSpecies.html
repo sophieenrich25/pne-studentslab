@@ -4,13 +4,13 @@
     <meta charset="UTF-8">
     <title>LIST OF SPECIES IN THE BROWSER</title>
 </head>
-<body style="background-color: lightblue;">
-    <p>The total number of species in Ensembl is: {{total_species}}</p>
-    <p>The limit you have selected is: {{limit_value}}</p>
+<body style="background-color: lavender;">
+    <p>The total number of species in Ensembl is: {{ context.total_species }}</p>
+    <p>The limit you have selected is: {{ context.limit_value }}</p>
     <p>The names of the species are:</p>
     <ul>
-        {% for name in species_list %}
-        <li>{{name}}</li>
+        {% for name in context.species_list %}
+        <li>{{ name }}</li>
         {% endfor %}
     </ul>
 

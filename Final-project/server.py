@@ -6,7 +6,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import json
 import jinja2 as j
-from jinja2 import Template
 
 PORT = 8080
 class TestHandler(http.server.BaseHTTPRequestHandler):
@@ -43,10 +42,9 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             return "ERROR! Cannot connect to the Server"
         return None
 
-    def send_html_response(self, contents, status=200):
-        self.send_response(status)
+    def send_html_response(self, contents):
+        self.send_response(200)
         self.send_header('Content-Type', 'text/html')
-        self.send_header('Content-Length', len(contents.encode()))
         self.end_headers()
         self.wfile.write(contents.encode())
 
@@ -85,8 +83,8 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         if data:
             all_species = data["species"]
 
-            limit = arguments.get("limit")
-            if limit and str(limit).isdigit():
+            limit = arguments.get("limit", [None])[0]
+            if limit and limit.isdigit():
                 limit = int(limit)
                 selected_species = all_species[:limit]
             else:
@@ -95,12 +93,13 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
             names_list = [s["display_name"] for s in selected_species]
 
-            template = Template(self.read_html_file("listSpecies.html"))
-            result = template.render(context={
+            template = self.read_html_file("listSpecies.html")
+            context_result = {
                 "total_species" : len(all_species),
                 "limit_value" : limit,
                 "species_list" : names_list
-            })
+            }
+            result = template.render(context=context_result)
             self.send_html_response(result)
         else:
             self.error()
@@ -111,14 +110,19 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
         if data:
             regions = data["top_level_region"]
-            names_list = [region["name"] for region in regions]
-
+            names_list = [
+                region["name"]
+                for region in regions
+                if region["coord_system"] == "chromosome"
+            ]
             names_html = self.html_lists(names_list)
 
             template = self.read_html_file("karyotype.html")
-            result = template.render(context={
-                "names_list" : names_html,
-            })
+            context_result = {
+                "names_list": names_html
+            }
+            result = template.render(context=context_result)
+
 
             self.send_html_response(result)
 
@@ -126,10 +130,10 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.error()
             print("Error: Ensembl data could not be obtained")
 
-
     def chromosomeLength(self, arguments):
         specie_selected = arguments.get("species", [None])[0]
         chromosome_selected = arguments.get("chromosome", [None])[0]
+
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
 
         if data:
@@ -139,21 +143,20 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             for region in regions:
                 if str(region["name"]).strip() == str(chromosome_selected).strip():
                     length = region["length"]
-                break
+                    break
 
             if length:
                 template = self.read_html_file("chromosomeLength.html")
-                result = template.render(context={
-                    "length_chromosome": length,
-                })
+                context_result = {
+                    "length_chromosome": length
+                }
+                result = template.render(context=context_result)
 
                 self.send_html_response(result)
-                print(f"{length}")
             else:
                 self.error()
         else:
             self.error()
-            print("Error: Ensembl data could not be obtained")
 
 
 
