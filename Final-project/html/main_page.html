@@ -27,8 +27,45 @@
           Select the species:
              <input type="text" name="species"><br>
             Select a chromosome:
-             <input type="text" name="chromosome"></br>
+             <input type="text" name="chromo"></br>
             <input type="submit" value="SEND">
         </form>
+
+         <h2>MEDIUM level services</h2>
+        <p>4)Gene Lookup: stable identifier of a human gene</p>
+            <form action="/geneLookup" method="get">
+              Gene:
+                 <input type="text" name="gene">
+                <br><input type="submit" value="SEND"> </br>
+            </form>
+        <p>5)Gene Seq: sequence of a human gene</p>
+            <form action="/geneSeq" method="get">
+              Gene:
+                 <input type="text" name="gene">
+                <br><input type="submit" value="SEND"> </br>
+            </form>
+        <p>6)Gene Info: information about a human gene</p>
+            <form action="/geneInfo" method="get">
+              Gene:
+                 <input type="text" name="gene">
+                <br><input type="submit" value="SEND"> </br>
+            </form>
+        <p>7)Gene Calc: calculations about a human gene</p>
+            <form action="/geneCalc" method="get">
+              Gene:
+                 <input type="text" name="gene">
+                <br><input type="submit" value="SEND"> </br>
+            </form>
+        <p>8)Gene list </p>
+                <form action="/geneList" method="get">
+                  Chromosome:
+                     <input type="text" name="chromosome"><br>
+                  Start:
+                     <input type="text" name="start"></br>
+                    End:
+                    <input type="text" name="end"></br>
+                    <input type="submit" value="SEND">
+                </form>
+
 </body>
 </html>

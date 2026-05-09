@@ -1,4 +1,6 @@
 import http.client
+import urllib.parse
+
 import termcolor
 import http.server
 import socketserver
@@ -6,6 +8,9 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import json
 import jinja2 as j
+from textdistance import Length
+
+from SeqClass import Seq
 
 PORT = 8080
 class TestHandler(http.server.BaseHTTPRequestHandler):
@@ -35,9 +40,10 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             conn.request("GET", RESOURCE)
             r = conn.getresponse()
             if r.status == 200:
-                response = r.read().decode("utf-8")
-                data = json.loads(response)
-                return data
+                data = r.read().decode("utf-8")
+                return json.loads(data)
+            else:
+                print(f"Error ensembl: {r.status}")
         except ConnectionRefusedError:
             return "ERROR! Cannot connect to the Server"
         return None
@@ -57,10 +63,10 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         termcolor.cprint(self.requestline, 'green')
         url_path = urlparse(self.path)
-        path = url_path.path
+        path = url_path.path.rstrip("/")
         arguments = parse_qs(url_path.query)
 
-        if path == "/":
+        if path == "":
             contents = Path('html/main_page.html').read_text()
             self.send_html_response(contents)
         elif path == "/listSpecies":
@@ -69,6 +75,16 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.karyotype(arguments)
         elif path == "/chromosomeLength":
             self.chromosomeLength(arguments)
+        elif path == "/geneLookup":
+            self.geneLookup(arguments)
+        elif path == "/geneSeq":
+            self.geneSeq(arguments)
+        elif path == "/geneInfo":
+            self.geneInfo(arguments)
+        elif path == "/geneCalc":
+            self.geneCalc(arguments)
+        elif path == "/geneList":
+            self.geneList(arguments)
         else:
             self.error()
 
@@ -107,6 +123,8 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
     def karyotype(self, arguments):
         specie_selected = arguments.get("species", [None])[0]
+        if specie_selected:
+            specie_selected = urllib.parse.quote(specie_selected)
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
         if data:
             regions = data["top_level_region"]
@@ -132,7 +150,9 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
     def chromosomeLength(self, arguments):
         specie_selected = arguments.get("species", [None])[0]
-        chromosome_selected = arguments.get("chromosome", [None])[0]
+        if specie_selected:
+            specie_selected = urllib.parse.quote(specie_selected)
+        chromosome_selected = arguments.get("chromo", [None])[0]
 
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
 
@@ -158,6 +178,105 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         else:
             self.error()
 
+    def geneLookup(self, arguments):
+        gene_selected = arguments.get("gene", [None])[0].strip()
+        data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
+
+        if data:
+            id = data["id"]
+            template = self.read_html_file("geneLookup.html")
+            context_result = {
+                "stable_id": id
+            }
+            result = template.render(context=context_result)
+
+            self.send_html_response(result)
+        else:
+            self.error()
+
+
+    def geneSeq(self, arguments):
+        gene_selected = arguments.get("gene", [None])[0].strip()
+        data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
+
+        if data:
+            id = data["id"]
+            seq_data = self.get_ensembl_json(f"/sequence/id/{id}")
+            if seq_data:
+                seq = seq_data["seq"]
+                template = self.read_html_file("geneSeq.html")
+                context_result = {
+                    "sequence": seq
+                }
+                result = template.render(context=context_result)
+
+                self.send_html_response(result)
+        else:
+            self.error()
+
+    def geneInfo(self, arguments):
+        gene_selected = arguments.get("gene", [None])[0].strip()
+        data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
+        if data:
+            id = data["id"]
+            start = data["start"]
+            end = data["end"]
+            length = int(end) - int(start)
+            chrom = data["seq_region_name"]
+
+            template = self.read_html_file("geneInfo.html")
+            context_result = {
+                "id" : id,
+                "start" : start,
+                "end" : end,
+                "length" : length,
+                "name" : chrom
+            }
+
+            result = template.render(context=context_result)
+            self.send_html_response(result)
+        else:
+            self.error()
+
+    def geneCalc(self, arguments):
+        gene_selected = arguments.get("gene", [None])[0].strip()
+        if not gene_selected:
+            return self.error()
+
+        data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
+        if not data or "id" not in data:
+            return self.error()
+
+        gene_id = data["id"]
+
+        seq_data = self.get_ensembl_json(f"/sequence/id/{gene_id}")
+        if not seq_data or "seq" not in seq_data:
+            return self.error()
+
+        seq = seq_data["seq"]
+        sequence = Seq(seq)
+        length = sequence.len()
+        dic_bases = sequence.count()
+
+        p_A = (dic_bases["A"] / length) * 100
+        p_T = (dic_bases["T"] / length) * 100
+        p_G = (dic_bases["G"] / length) * 100
+        p_C = (dic_bases["C"] / length) * 100
+
+        context_result = {
+            "length": length,
+            "p_A": round(p_A, 2),
+            "p_T": round(p_T, 2),
+            "p_G": round(p_G, 2),
+            "p_C": round(p_C, 2)
+        }
+
+        template = self.read_html_file("geneCalc.html")
+        if not template:
+            return self.error()
+
+        result = template.render(context=context_result)
+        self.send_html_response(result)
 
 
 Handler = TestHandler
