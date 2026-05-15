@@ -1,6 +1,5 @@
 import http.client
 import urllib.parse
-
 import termcolor
 import http.server
 import socketserver
@@ -60,6 +59,13 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             html_str += f"<li>{i}</li>"
         return html_str
 
+    def send_json_response(self, result):
+        json_str = json.dumps(result)
+        self.send_response(200)
+        self.send_header('Content-Type', 'application/json')
+        self.end_headers()
+        self.wfile.write(json_str.encode())
+
     def do_GET(self):
         termcolor.cprint(self.requestline, 'green')
         url_path = urlparse(self.path)
@@ -95,7 +101,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
     def listSpecies(self, arguments):
         data = self.get_ensembl_json("/info/species")
-
+        is_json = arguments.get("json", ["0"])[0] == "1"
         if data:
             all_species = data["species"]
 
@@ -109,14 +115,17 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
             names_list = [s["display_name"] for s in selected_species]
 
-            template = self.read_html_file("listSpecies.html")
             context_result = {
                 "total_species" : len(all_species),
                 "limit_value" : limit,
                 "species_list" : names_list
             }
-            result = template.render(context=context_result)
-            self.send_html_response(result)
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("listSpecies.html")
+                result = template.render(context=context_result)
+                self.send_html_response(result)
         else:
             self.error()
             print("Error: Ensembl data could not be obtained")
@@ -125,6 +134,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         specie_selected = arguments.get("species", [None])[0]
         if specie_selected:
             specie_selected = urllib.parse.quote(specie_selected)
+        is_json = arguments.get("json", ["0"])[0] == "1"
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
         if data:
             regions = data["top_level_region"]
@@ -133,16 +143,20 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
                 for region in regions
                 if region["coord_system"] == "chromosome"
             ]
-            names_html = self.html_lists(names_list)
 
-            template = self.read_html_file("karyotype.html")
-            context_result = {
-                "names_list": names_html
-            }
-            result = template.render(context=context_result)
-
-
-            self.send_html_response(result)
+            if is_json:
+                context_result = {
+                    "names_list": names_list
+                }
+                self.send_json_response(context_result)
+            else:
+                names_html = self.html_lists(names_list)
+                context_result = {
+                    "names_list": names_html
+                }
+                template = self.read_html_file("karyotype.html")
+                result = template.render(context=context_result)
+                self.send_html_response(result)
 
         else:
             self.error()
@@ -152,6 +166,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         specie_selected = arguments.get("species", [None])[0]
         if specie_selected:
             specie_selected = urllib.parse.quote(specie_selected)
+        is_json = arguments.get("json", ["0"])[0] == "1"
         chromosome_selected = arguments.get("chromo", [None])[0]
 
         data = self.get_ensembl_json(f"/info/assembly/{specie_selected}")
@@ -166,37 +181,45 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
                     break
 
             if length:
-                template = self.read_html_file("chromosomeLength.html")
                 context_result = {
                     "length_chromosome": length
                 }
-                result = template.render(context=context_result)
-
-                self.send_html_response(result)
             else:
                 self.error()
+
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("chromosomeLength.html")
+                result = template.render(context=context_result)
+                self.send_html_response(result)
+
         else:
             self.error()
 
     def geneLookup(self, arguments):
-        gene_selected = arguments.get("gene", [None])[0].strip()
+        gene_selected = arguments.get("gene", [None])[0].strip().upper()
+        is_json = arguments.get("json", ["0"])[0] == "1"
         data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
 
         if data:
             id = data["id"]
-            template = self.read_html_file("geneLookup.html")
             context_result = {
                 "stable_id": id
             }
-            result = template.render(context=context_result)
-
-            self.send_html_response(result)
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("geneLookup.html")
+                result = template.render(context=context_result)
+                self.send_html_response(result)
         else:
             self.error()
 
 
     def geneSeq(self, arguments):
-        gene_selected = arguments.get("gene", [None])[0].strip()
+        gene_selected = arguments.get("gene", [None])[0].strip().upper()
+        is_json = arguments.get("json", ["0"])[0] == "1"
         data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
 
         if data:
@@ -204,18 +227,21 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             seq_data = self.get_ensembl_json(f"/sequence/id/{id}")
             if seq_data:
                 seq = seq_data["seq"]
-                template = self.read_html_file("geneSeq.html")
                 context_result = {
                     "sequence": seq
                 }
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("geneSeq.html")
                 result = template.render(context=context_result)
-
                 self.send_html_response(result)
         else:
             self.error()
 
     def geneInfo(self, arguments):
-        gene_selected = arguments.get("gene", [None])[0].strip()
+        gene_selected = arguments.get("gene", [None])[0].strip().upper()
+        is_json = arguments.get("json", ["0"])[0] == "1"
         data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
         if data:
             id = data["id"]
@@ -224,7 +250,6 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             length = int(end) - int(start)
             chrom = data["seq_region_name"]
 
-            template = self.read_html_file("geneInfo.html")
             context_result = {
                 "id" : id,
                 "start" : start,
@@ -232,17 +257,20 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
                 "length" : length,
                 "name" : chrom
             }
-
-            result = template.render(context=context_result)
-            self.send_html_response(result)
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("geneInfo.html")
+                result = template.render(context=context_result)
+                self.send_html_response(result)
         else:
             self.error()
 
     def geneCalc(self, arguments):
-        gene_selected = arguments.get("gene", [None])[0].strip()
+        gene_selected = arguments.get("gene", [None])[0].strip().upper()
         if not gene_selected:
             return self.error()
-
+        is_json = arguments.get("json", ["0"])[0] == "1"
         data = self.get_ensembl_json(f"/lookup/symbol/homo_sapiens/{gene_selected}")
         if not data or "id" not in data:
             return self.error()
@@ -270,13 +298,15 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             "p_G": round(p_G, 2),
             "p_C": round(p_C, 2)
         }
+        if is_json:
+            self.send_json_response(context_result)
+        else:
+            template = self.read_html_file("geneCalc.html")
+            result = template.render(context=context_result)
+            self.send_html_response(result)
 
-        template = self.read_html_file("geneCalc.html")
-        if not template:
-            return self.error()
-
-        result = template.render(context=context_result)
-        self.send_html_response(result)
+    def geneList(self, arguments):
+        pass
 
 
 Handler = TestHandler
