@@ -306,7 +306,45 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
             self.send_html_response(result)
 
     def geneList(self, arguments):
-        pass
+        chromo = arguments.get("chromo", [None])[0]
+        start = arguments.get("start", [None])[0]
+        end = arguments.get("end", [None])[0]
+        is_json = arguments.get("json", ["0"])[0] == "1"
+
+
+        if not chromo or not start or not end:
+            return self.error()
+        try:
+            start = int(start)
+            end = int(end)
+        except ValueError:
+            return self.error()
+
+        chromo_encoded = urllib.parse.quote(chromo)
+        endpoint = f"/overlap/region/human/{chromo_encoded}:{start}-{end}?feature=gene"
+
+        data = self.get_ensembl_json(endpoint)
+        if not data:
+            return self.error()
+
+        gene_names = [gene.get("external_name", gene.get("id")) for gene in data]
+
+        context_result = {
+            "chromo": chromo,
+            "start": start,
+            "end": end,
+            "genes": gene_names
+        }
+
+        if is_json:
+            self.send_json_response(context_result)
+        else:
+            template = self.read_html_file("geneList.html")
+            if template:
+                result = template.render(context=context_result)
+                self.send_html_response(result)
+            else:
+                self.error()
 
 
 Handler = TestHandler
