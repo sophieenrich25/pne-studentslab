@@ -317,34 +317,40 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         try:
             start = int(start)
             end = int(end)
+            region = start-end
         except ValueError:
             return self.error()
 
-        chromo_encoded = urllib.parse.quote(chromo)
-        endpoint = f"/overlap/region/human/{chromo_encoded}:{start}-{end}?feature=gene"
+        endpoint = f"/overlap/region/human/{chromo}:{region}?feature=gene"
 
         data = self.get_ensembl_json(endpoint)
         if not data:
             return self.error()
+        if data:
+            names = []
+            for gene in data:
+                name = gene["external_name"]
+                if not "external_name" in data:
+                    return None
+                names.append(name)
 
-        gene_names = [gene.get("external_name", gene.get("id")) for gene in data]
+            names_html = self.html_lists(names)
 
-        context_result = {
-            "chromo": chromo,
-            "start": start,
-            "end": end,
-            "genes": gene_names
-        }
+            context_result = {
+                "chromo": chromo,
+                "start": start,
+                "end": end,
+                "genes": names_html
+            }
 
-        if is_json:
-            self.send_json_response(context_result)
-        else:
-            template = self.read_html_file("geneList.html")
-            if template:
+            if is_json:
+                self.send_json_response(context_result)
+            else:
+                template = self.read_html_file("geneList.html")
                 result = template.render(context=context_result)
                 self.send_html_response(result)
-            else:
-                self.error()
+        else:
+            self.error()
 
 
 Handler = TestHandler
