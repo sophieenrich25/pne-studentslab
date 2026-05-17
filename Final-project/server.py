@@ -33,13 +33,29 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
 
     def get_ensembl_json(self, endpoint):
         PARAMS = "?content-type=application/json"
-        RESOURCE = endpoint + PARAMS
         conn = http.client.HTTPSConnection("rest.ensembl.org")
         try:
-            conn.request("GET", RESOURCE)
+            conn.request("GET", endpoint + PARAMS)
             r = conn.getresponse()
             if r.status == 200:
                 data = r.read().decode("utf-8")
+                conn.close()
+                return json.loads(data)
+            else:
+                print(f"Error ensembl: {r.status}")
+        except ConnectionRefusedError:
+            return "ERROR! Cannot connect to the Server"
+        return None
+
+    def get_ensembl_json_overlap(self, endpoint):
+        PARAMS = "&content-type=application/json"
+        conn = http.client.HTTPSConnection("rest.ensembl.org")
+        try:
+            conn.request("GET", endpoint + PARAMS)
+            r = conn.getresponse()
+            if r.status == 200:
+                data = r.read().decode("utf-8")
+                conn.close()
                 return json.loads(data)
             else:
                 print(f"Error ensembl: {r.status}")
@@ -308,44 +324,42 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
     def geneList(self, arguments):
         chromo = arguments.get("chromo", [None])[0]
         start = arguments.get("start", [None])[0]
-        end = arguments.get("end", [None])[0]
-        is_json = arguments.get("json", ["0"])[0] == "1"
-
-
-        if not chromo or not start or not end:
-            return self.error()
-        try:
+        if start.isdigit():
             start = int(start)
+        end = arguments.get("end", [None])[0]
+        if end.isdigit():
             end = int(end)
-            region = start-end
-        except ValueError:
-            return self.error()
-
-        endpoint = f"/overlap/region/human/{chromo}:{region}?feature=gene"
-
-        data = self.get_ensembl_json(endpoint)
-        if not data:
-            return self.error()
+        is_json = arguments.get("json", ["0"])[0] == "1"
+        region = f"{chromo}:{start}-{end}"
+        endpoint = f"/overlap/region/human/{region}?feature=gene"
+        data = self.get_ensembl_json_overlap(endpoint)
         if data:
             names = []
             for gene in data:
-                name = gene["external_name"]
-                if not "external_name" in data:
-                    return None
-                names.append(name)
+                name = gene.get("external_name")
+                if name:
+                    names.append(name)
+            if not names:
+                names = "No genes overlapping in this region were found"
 
             names_html = self.html_lists(names)
 
-            context_result = {
-                "chromo": chromo,
-                "start": start,
-                "end": end,
-                "genes": names_html
-            }
 
             if is_json:
+                context_result = {
+                    "chromo": chromo,
+                    "start": start,
+                    "end": end,
+                    "genes": names
+                    }
                 self.send_json_response(context_result)
             else:
+                context_result = {
+                    "chromo": chromo,
+                    "start": start,
+                    "end": end,
+                    "genes": names_html
+                }
                 template = self.read_html_file("geneList.html")
                 result = template.render(context=context_result)
                 self.send_html_response(result)
