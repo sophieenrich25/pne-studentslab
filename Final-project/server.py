@@ -317,7 +317,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         if start and start.isdigit():
             start = int(start)
         end = arguments.get("end", [None])[0]
-        if end.isdigit():
+        if end and end.isdigit():
             end = int(end)
 
         is_json = arguments.get("json", ["0"])[0] == "1"
