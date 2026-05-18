@@ -12,6 +12,8 @@
     <ul>
         {% for gene in context.genes %}
         <li>{{ gene }}</li>
+        {% else %}
+        <li>No genes overlapping in this region were found.</li>
         {% endfor %}
     </ul>
 </body>

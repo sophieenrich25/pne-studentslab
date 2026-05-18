@@ -7,7 +7,6 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 import json
 import jinja2 as j
-from textdistance import Length
 
 from SeqClass import Seq
 
@@ -69,11 +68,7 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(contents.encode())
 
-    def html_lists(self, items):
-        html_str = ""
-        for i in items:
-            html_str += f"<li>{i}</li>"
-        return html_str
+
 
     def send_json_response(self, result):
         json_str = json.dumps(result)
@@ -159,17 +154,12 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
                 for region in regions
                 if region["coord_system"] == "chromosome"
             ]
-
+            context_result = {
+                "names_list": names_list
+            }
             if is_json:
-                context_result = {
-                    "names_list": names_list
-                }
                 self.send_json_response(context_result)
             else:
-                names_html = self.html_lists(names_list)
-                context_result = {
-                    "names_list": names_html
-                }
                 template = self.read_html_file("karyotype.html")
                 result = template.render(context=context_result)
                 self.send_html_response(result)
@@ -324,45 +314,41 @@ class TestHandler(http.server.BaseHTTPRequestHandler):
     def geneList(self, arguments):
         chromo = arguments.get("chromo", [None])[0]
         start = arguments.get("start", [None])[0]
-        if start.isdigit():
+        if start and start.isdigit():
             start = int(start)
         end = arguments.get("end", [None])[0]
         if end.isdigit():
             end = int(end)
+
         is_json = arguments.get("json", ["0"])[0] == "1"
         region = f"{chromo}:{start}-{end}"
+
         endpoint = f"/overlap/region/human/{region}?feature=gene"
         data = self.get_ensembl_json_overlap(endpoint)
-        if data:
+
+        if data is not None:
             names = []
             for gene in data:
                 name = gene.get("external_name")
                 if name:
                     names.append(name)
-            if not names:
-                names = "No genes overlapping in this region were found"
 
-            names_html = self.html_lists(names)
-
+            context_result = {
+                "chromo": chromo,
+                "start": start,
+                "end": end,
+                "genes": names
+            }
 
             if is_json:
-                context_result = {
-                    "chromo": chromo,
-                    "start": start,
-                    "end": end,
-                    "genes": names
-                    }
                 self.send_json_response(context_result)
             else:
-                context_result = {
-                    "chromo": chromo,
-                    "start": start,
-                    "end": end,
-                    "genes": names_html
-                }
                 template = self.read_html_file("geneList.html")
-                result = template.render(context=context_result)
-                self.send_html_response(result)
+                if template:
+                    result = template.render(context=context_result)
+                    self.send_html_response(result)
+                else:
+                    self.error()
         else:
             self.error()
 
